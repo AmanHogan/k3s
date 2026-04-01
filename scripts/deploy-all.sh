@@ -2,8 +2,8 @@
 # deploy-all.sh — build, push, and deploy all services to the k3s cluster
 set -e
 
-REGISTRY="localhost:5001"         # Docker pushes here (localhost trusted)
-HOST_REGISTRY="192.168.56.1:5001" # k3s nodes pull from here
+REGISTRY="192.168.56.20:5001"     # jenkins-agent VM hosts the registry
+HOST_REGISTRY="192.168.56.20:5001"
 
 # ── 1. Ensure local registry is running ─────────────────────────────────────
 if ! docker ps --filter "name=^registry$" --filter "status=running" --format '{{.Names}}' | grep -q "^registry$"; then

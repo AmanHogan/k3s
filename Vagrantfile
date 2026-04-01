@@ -115,4 +115,15 @@ Vagrant.configure("2") do |config|
       end
       worker2.vm.provision "shell", path: "k3s-worker.sh", args: ["192.168.56.10"]
     end
+
+    # Jenkins build agent — has Docker, connects to Jenkins controller in k3s
+    config.vm.define "jenkins-agent" do |agent|
+      agent.vm.hostname = "jenkins-agent"
+      agent.vm.network "private_network", ip: "192.168.56.20"
+      agent.vm.provider "virtualbox" do |vb|
+        vb.memory = "2048"
+        vb.cpus = 2
+      end
+      agent.vm.provision "shell", path: "jenkins-agent.sh"
+    end
   end

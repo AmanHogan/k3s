@@ -8,15 +8,15 @@ MASTER_IP=$1
 # Get the token from the shared folder
 TOKEN=$(cat /vagrant/token)
 
-# Configure k3s to trust the local registry running on the host Mac (192.168.56.1:5001)
+# Configure k3s to trust the registry running on the jenkins-agent VM (192.168.56.20:5001)
 mkdir -p /etc/rancher/k3s
 cat > /etc/rancher/k3s/registries.yaml <<EOF
 mirrors:
-  "192.168.56.1:5001":
+  "192.168.56.20:5001":
     endpoint:
-      - "http://192.168.56.1:5001"
+      - "http://192.168.56.20:5001"
 configs:
-  "192.168.56.1:5001":
+  "192.168.56.20:5001":
     tls:
       insecure_skip_verify: true
 EOF

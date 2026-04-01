@@ -20,7 +20,7 @@ spec:
           command: ['sh', '-c', 'until nc -z mongodb 27017; do echo waiting for mongodb; sleep 2; done']
       containers:
         - name: commitment-tracker-api
-          image: 192.168.56.1:5001/commitment-tracker-api:latest
+          image: 192.168.56.20:5001/commitment-tracker-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
