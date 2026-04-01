@@ -6,6 +6,9 @@ controller:
     - workflow-aggregator:latest
     - pipeline-stage-view:latest
     - docker-workflow:latest
+    - ssh-slaves:latest
+    - credentials:latest
+    - ssh-credentials:latest
 
   # Mount the node's Docker socket so pipeline stages can run `docker build/push`
   # Note: this gives Jenkins full Docker access on the node — acceptable for homelab.
