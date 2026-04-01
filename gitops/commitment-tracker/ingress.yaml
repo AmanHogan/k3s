@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: default
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          # Spring Boot — controllers use /api/** so path passes through cleanly
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: commitment-tracker-api
+                port:
+                  number: 8080
+          # React SPA — catch-all; must be last so /api wins first
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: commitment-tracker-frontend
+                port:
+                  number: 80

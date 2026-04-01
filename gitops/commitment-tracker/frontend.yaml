@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: commitment-tracker-frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: commitment-tracker-frontend
+  template:
+    metadata:
+      labels:
+        app: commitment-tracker-frontend
+    spec:
+      containers:
+        - name: commitment-tracker-frontend
+          image: 192.168.56.1:5001/commitment-tracker-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: commitment-tracker-frontend
+  namespace: default
+spec:
+  selector:
+    app: commitment-tracker-frontend
+  ports:
+    - port: 80
+      targetPort: 80

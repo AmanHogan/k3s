@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headlamp
+  template:
+    metadata:
+      labels:
+        app: headlamp
+    spec:
+      serviceAccountName: headlamp
+      containers:
+        - name: headlamp
+          image: ghcr.io/headlamp-k8s/headlamp:latest
+          args:
+            - "-in-cluster"
+          ports:
+            - containerPort: 4466
+          resources:
+            requests:
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp
+  namespace: kube-system
+---
+# Long-lived token for Headlamp login. Retrieve with:
+#   vagrant ssh k3s-master -c "kubectl get secret headlamp-token -n kube-system -o jsonpath='{.data.token}' | base64 -d && echo"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: headlamp-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: headlamp
+type: kubernetes.io/service-account-token
+---
+# Grants Headlamp read access to all cluster resources (view-only dashboard)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: headlamp
+    namespace: kube-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: headlamp
+  namespace: kube-system
+spec:
+  type: LoadBalancer
+  selector:
+    app: headlamp
+  ports:
+    - port: 80
+      targetPort: 4466

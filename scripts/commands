@@ -1,0 +1,121 @@
+# ============================================================
+# VM LIFECYCLE
+# ============================================================
+
+# Suspend VMs (fast resume, saves RAM state to disk)
+vagrant suspend
+
+# Resume from suspend
+vagrant resume
+
+# Shutdown VMs cleanly (slower start next time, but no disk space for RAM)
+vagrant halt
+
+# Start halted VMs (re-runs provisioners only if --provision flag given)
+vagrant up
+
+# Destroy everything (nuke VMs entirely — needs `vagrant up` to rebuild)
+vagrant destroy -f
+
+# SSH into master
+vagrant ssh k3s-master
+
+# Check VM status
+vagrant status
+
+# ============================================================
+# CLUSTER HEALTH
+# ============================================================
+
+# All nodes
+vagrant ssh k3s-master -c 'kubectl get nodes -o wide'
+
+# All pods (all namespaces)
+vagrant ssh k3s-master -c 'kubectl get pods -A'
+
+# All LoadBalancer IPs
+vagrant ssh k3s-master -c 'kubectl get svc -A --field-selector spec.type=LoadBalancer'
+
+# ============================================================
+# APPS
+# ============================================================
+
+# Deploy / redeploy apps
+./deploy-all.sh
+
+# Watch rollout
+vagrant ssh k3s-master -c 'kubectl rollout status deployment/commitment-tracker-api'
+
+# Tail API logs
+vagrant ssh k3s-master -c 'kubectl logs -f -l app=commitment-tracker-api --tail=50'
+
+# Headlamp token (paste into Headlamp UI)
+vagrant ssh k3s-master -c 'kubectl get secret headlamp-token -n kube-system -o jsonpath="{.data.token}" | base64 -d && echo'
+
+# ============================================================
+# MONITORING
+# ============================================================
+
+# Install / upgrade Prometheus + Grafana + Loki
+./deploy-monitoring.sh
+
+# Watch monitoring pods
+vagrant ssh k3s-master -c 'kubectl get pods -n monitoring -w'
+
+# Grafana URL + creds: admin / admin
+vagrant ssh k3s-master -c 'kubectl get svc -n monitoring monitoring-grafana -o jsonpath="http://{.status.loadBalancer.ingress[0].ip}/" && echo'
+
+# Prometheus URL
+vagrant ssh k3s-master -c 'kubectl get svc -n monitoring monitoring-kube-prometheus-prometheus -o jsonpath="http://{.status.loadBalancer.ingress[0].ip}/" && echo'
+
+# Loki log query example (in Grafana Explore → Loki datasource):
+#   {namespace="default", app="commitment-tracker-api"}
+
+# Grafana pod logs (debug crashes)
+vagrant ssh k3s-master -c 'kubectl logs -n monitoring -l app.kubernetes.io/name=grafana -c grafana --tail=30'
+
+# ============================================================
+# HELM STUCK RELEASE FIX
+# ============================================================
+# If: Error: another operation (install/upgrade/rollback) is in progress
+vagrant ssh k3s-master -c 'helm uninstall monitoring -n monitoring 2>/dev/null || true; kubectl delete secret -n monitoring -l owner=helm,name=monitoring 2>/dev/null || true; sleep 2; helm list -n monitoring -a'
+# Then re-run ./deploy-monitoring.sh
+
+
+
+
+
+
+
+Some crazy loki fix:
+# k3s monitoring stack — Grafana datasource conflict fix
+
+## Root cause
+kube-prometheus-stack v82+ AND loki-stack both create Grafana datasource ConfigMaps (label `grafana_datasource=1`) with `isDefault: true`.
+Grafana 12.x hard-fails on startup: "Only one datasource per organization can be marked as default".
+
+## Fix
+After installing loki-stack, patch its ConfigMap to set isDefault: false:
+```bash
+kubectl patch configmap loki-loki-stack -n monitoring --type merge \
+  -p '{"data":{"loki-stack-datasource.yaml":"apiVersion: 1\ndatasources:\n- name: Loki\n  type: loki\n  access: proxy\n  url: \"http://loki:3100\"\n  version: 1\n  isDefault: false\n  jsonDåata:\n    {}\n"}}'
+```
+This is baked into deploy-monitoring.sh.
+
+## Helm stuck release fix
+If `helm upgrade --install` fails with "another operation in progress":
+```bash
+helm uninstall <release> -n <namespace> 2>/dev/null || true
+kubectl delete secret -n <namespace> -l owner=helm,name=<release>
+```
+Then retry.
+
+
+
+
+
+### CI/CD Runner
+SHA=$(git rev-parse --short HEAD)
+docker build -t myregistry/commitment-tracker-api:$SHA ./backend/commitment-tracker
+docker push myregistry/commitment-tracker-api:$SHA
+vagrant ssh k3s-master -c "kubectl set image deployment/commitment-tracker-api commitment-tracker-api=myregistry/commitment-tracker-api:$SHA"
