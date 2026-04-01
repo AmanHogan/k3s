@@ -81,8 +81,25 @@ kubectl wait --namespace kube-system \
 echo "Traefik service:"
 kubectl get svc -n kube-system traefik
 
-# Install Helm (needed for monitoring stack)
+# Install Helm (needed for monitoring + Jenkins)
 if ! command -v helm &>/dev/null; then
   echo "Installing Helm..."
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
+
+# ── ArgoCD ───────────────────────────────────────────────────────────────────
+echo "Installing ArgoCD..."
+kubectl create namespace argocd 2>/dev/null || true
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"LoadBalancer"}}' 2>/dev/null || true
+# Don't wait — it pulls several images; deploy-all.sh will print the IP once MetalLB is ready
+
+# ── Jenkins ──────────────────────────────────────────────────────────────────
+echo "Installing Jenkins..."
+helm repo add jenkins https://charts.jenkins.io 2>/dev/null || true
+helm repo update
+helm upgrade --install jenkins jenkins/jenkins \
+  --namespace jenkins --create-namespace \
+  --values /vagrant/platform/jenkins/values.yaml \
+  --timeout 10m \
+  --wait || echo "Warning: Jenkins install timed out — pods will finish pulling images on their own."
