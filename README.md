@@ -1,12 +1,45 @@
 # k3s Local Dev Cluster
 
-A 3-node K3s Kubernetes cluster (1 master, 2 workers) running in VirtualBox via Vagrant on Apple Silicon (ARM64).
+A 3-node k3s Kubernetes cluster with a full GitOps CI/CD pipeline, running in VirtualBox via Vagrant.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Your Mac                                               │
+│  git push → GitHub ──────────────────────────┐         │
+└─────────────────────────────────────────────┬┘         │
+                                              │           │
+                                     Jenkins webhook      │
+                                              ▼           │
+┌─────────────────────────────────────────────────────────┐
+│  VirtualBox VMs (192.168.56.0/24)                       │
+│                                                         │
+│  jenkins-agent  192.168.56.20                           │
+│    • Runs Jenkins builds (docker build / push)          │
+│    • Hosts Docker registry on :5001                     │
+│    • Pushes image → updates gitops manifest → git push  │
+│                          │                              │
+│                          ▼ ArgoCD detects manifest diff │
+│  k3s-master     192.168.56.10  (+ workers .11, .12)    │
+│    • ArgoCD pulls from GitHub, deploys to cluster       │
+│    • MetalLB assigns IPs 192.168.56.200–.250            │
+└─────────────────────────────────────────────────────────┘
+```
+
+| Service    | URL                          | Credentials          |
+|------------|------------------------------|----------------------|
+| ArgoCD     | http://192.168.56.205/       | admin / `3k70S8iChdGzYR2E` |
+| Jenkins    | http://192.168.56.206:8080/  | admin / `WuEopgwZqWmtK6JegGLlX1` |
+| Grafana    | http://192.168.56.2xx/       | admin / admin        |
+| App        | http://192.168.56.2xx/       | —                    |
+
+---
 
 ## Prerequisites
 
 - [Vagrant](https://www.vagrantup.com/)
-- [VirtualBox](https://www.virtualbox.org/) (7.1+ with ARM support)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for building images and running the local registry)
+- [VirtualBox](https://www.virtualbox.org/) (7.1+)
 
 ---
 
@@ -16,93 +49,96 @@ A 3-node K3s Kubernetes cluster (1 master, 2 workers) running in VirtualBox via 
 vagrant up
 ```
 
-This provisions:
-- `k3s-master` at `192.168.56.10` — runs K3s server + MetalLB
-- `k3s-worker1` at `192.168.56.11` — runs K3s agent
-- `k3s-worker2` at `192.168.56.12` — runs K3s agent
+Provisions all 4 VMs:
 
-MetalLB is installed automatically on the master and assigns IPs from `192.168.56.200–192.168.56.250` to `LoadBalancer` services.
+| VM            | IP               | Role                                      |
+|---------------|------------------|-------------------------------------------|
+| `k3s-master`  | 192.168.56.10    | k3s server, MetalLB, ArgoCD, Jenkins      |
+| `k3s-worker1` | 192.168.56.11    | k3s agent                                 |
+| `k3s-worker2` | 192.168.56.12    | k3s agent                                 |
+| `jenkins-agent` | 192.168.56.20  | Docker build agent + image registry :5001 |
+
+After `vagrant up`, Jenkins needs one manual step — see [Jenkins node setup](#jenkins-node-setup) below.
 
 ### SSH into a node
 
 ```bash
 vagrant ssh k3s-master
-vagrant ssh k3s-worker1
-vagrant ssh k3s-worker2
+vagrant ssh jenkins-agent
 ```
 
 ---
 
-## Local Docker Registry
+## CI/CD Pipeline
 
-All nodes are pre-configured to pull from a registry running on your Mac at `192.168.56.1:5000`.
+### How it works
 
-### Start the registry (one-time)
+1. Developer pushes code to `https://github.com/AmanHogan/commitment-tracker`
+2. Jenkins (running in k3s) triggers a build on the `docker-agent` node (the `jenkins-agent` VM)
+3. Jenkins builds the Docker image and pushes it to the registry at `192.168.56.20:5001`
+4. Jenkins clones the k3s infra repo, updates the image tag in `gitops/<app>/backend.yaml`, and pushes
+5. ArgoCD detects the manifest change and deploys the new image to the cluster
 
+### Jenkins node setup (one-time after `vagrant up`)
+
+The `jenkins-agent` VM is provisioned automatically, but Jenkins needs to know about it:
+
+1. Go to `http://192.168.56.206:8080` → **Manage Jenkins → Nodes → New Node**
+2. Name: `docker-agent`, type: **Permanent Agent**
+3. Remote root directory: `/home/vagrant/jenkins`
+4. Labels: `docker-agent`
+5. Launch method: **Launch agents via SSH**
+6. Host: `192.168.56.20`
+7. Credentials: Add → SSH Username with private key
+   - Username: `vagrant`
+   - Private key: paste contents of `.vagrant/machines/jenkins-agent/virtualbox/private_key`
+8. Host Key Verification Strategy: **Non verifying**
+9. Save — Jenkins will connect and the node will go online
+
+### Registry
+
+The Docker registry runs on `jenkins-agent` at `192.168.56.20:5001`. All k3s nodes are pre-configured to pull from it (set in `registries.yaml` during provisioning).
+
+To check the registry contents:
 ```bash
-docker run -d -p 5001:5000 --restart=always --name registry registry:2
-```
-
-### Build and push an image
-
-```bash
-docker build -t 192.168.56.1:5001/myapp:latest ./my-app
-docker push 192.168.56.1:5001/myapp:latest
-```
-
-Reference it in Kubernetes as:
-```yaml
-image: 192.168.56.1:5001/myapp:latest
-imagePullPolicy: Always
-```
-
-### After updating your image, rolling restart
-
-```bash
-docker build -t 192.168.56.1:5001/myapp:latest . && docker push 192.168.56.1:5001/myapp:latest
-kubectl rollout restart deployment/myapp
+vagrant ssh jenkins-agent -c "curl -s http://localhost:5001/v2/_catalog"
 ```
 
 ---
 
-## Test Hello-World App
+## GitOps (ArgoCD)
 
-A minimal nginx hello-world is included to verify the full stack works.
+Kubernetes manifests live in `gitops/`. ArgoCD watches this repo and applies any changes automatically.
 
-```bash
-./test-app/test-deploy.sh
+```
+gitops/
+  commitment-tracker/
+    backend.yaml    ← Deployment + Service for the API
+    frontend.yaml   ← Deployment + Service for the UI
+    ingress.yaml    ← Ingress rules
 ```
 
-This will:
-1. Start the local registry (if not running)
-2. Build `test-app/Dockerfile`
-3. Push to `192.168.56.1:5001/hello-k3s:latest`
-4. Apply `test-app/k8s.yaml` (Deployment + LoadBalancer Service)
-5. Print the MetalLB-assigned IP to curl
+To add a new application: see [docs/adding-new-apps.md](docs/adding-new-apps.md).
+
+ArgoCD apps are defined in `apps/` and applied during cluster provisioning.
+
+---
+
+## Monitoring
 
 ```bash
-curl http://192.168.56.200   # or whichever IP MetalLB assigns
+./scripts/deploy-monitoring.sh
 ```
+
+Installs Prometheus, Grafana, and Loki via Helm. Grafana is exposed via MetalLB.
 
 ---
 
 ## MetalLB
 
-Installed automatically during `vagrant up`. Config is in `metallb/metallb.yaml`.
-
 - IP pool: `192.168.56.200–192.168.56.250`
 - Mode: Layer 2 (ARP)
-- Any `Service` with `type: LoadBalancer` gets an IP from this pool automatically.
-
----
-
-## Cluster Commands (from master node)
-
-```bash
-kubectl get nodes           # check all 3 nodes are Ready
-kubectl get pods -A         # all pods across all namespaces
-kubectl get svc             # list services and their external IPs
-```
+- Any `Service` with `type: LoadBalancer` gets an IP automatically
 
 ---
 
