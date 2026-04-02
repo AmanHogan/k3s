@@ -146,51 +146,40 @@ kubectl delete secret -n <namespace> -l owner=helm,name=<release>
 Then retry.
 
 # ============================================================
-
-# JENKINS AGENT VM (192.168.56.20)
-
+# JENKINS VM (192.168.56.20) — controller + builds + registry
 # ============================================================
 
-# Check registry is running on agent VM
+# Get initial admin password (first time setup)
+vagrant ssh jenkins-agent -c "docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword"
 
-vagrant ssh jenkins-agent -c "docker ps && curl -s http://localhost:5001/v2/\_catalog"
+# Jenkins UI
+# http://192.168.56.20:8080
 
-# SSH into agent VM
+# Check all containers on the VM (jenkins + registry)
+vagrant ssh jenkins-agent -c "docker ps"
 
+# SSH into the VM
 vagrant ssh jenkins-agent
 
-# View agent VM docker logs
+# Jenkins logs
+vagrant ssh jenkins-agent -c "docker logs jenkins --tail=50"
 
+# Registry contents
+vagrant ssh jenkins-agent -c "curl -s http://localhost:5001/v2/_catalog"
+
+# Registry logs
 vagrant ssh jenkins-agent -c "docker logs registry"
 
 # ============================================================
-
 # CI/CD PIPELINE
-
 # ============================================================
 
 # Trigger a build: just push a commit to commitment-tracker repo
-
-# Jenkins will pick it up, build on docker-agent, push to 192.168.56.20:5001
-
+# Jenkins polls GitHub, builds on its own executor, pushes to 192.168.56.20:5001
 # ArgoCD will sync automatically within 3 minutes after Jenkinsfile updates the manifest
 
 # Check ArgoCD sync status
-
 vagrant ssh k3s-master -c 'kubectl get application -n argocd commitment-tracker'
 
 # Force ArgoCD to sync now (don't wait 3 min)
-
 vagrant ssh k3s-master -c 'argocd app sync commitment-tracker --auth-token $(kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)' 2>/dev/null || true
-
-# Manually build + push from Mac (useful for seeding the registry first time)
-
-# REGISTRY=192.168.56.20:5001
-
-# SHA=$(git rev-parse --short HEAD)
-
-# docker build -t $REGISTRY/commitment-tracker-api:$SHA -t $REGISTRY/commitment-tracker-api:latest ./commitment-tracker/backend
-
-# docker push $REGISTRY/commitment-tracker-api:$SHA
-
-# docker push $REGISTRY/commitment-tracker-api:latest

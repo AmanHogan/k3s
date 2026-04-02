@@ -27,12 +27,12 @@ A 3-node k3s Kubernetes cluster with a full GitOps CI/CD pipeline, running in Vi
 └─────────────────────────────────────────────────────────┘
 ```
 
-| Service    | URL                          | Credentials          |
-|------------|------------------------------|----------------------|
-| ArgoCD     | http://192.168.56.205/       | admin / `3k70S8iChdGzYR2E` |
-| Jenkins    | http://192.168.56.206:8080/  | admin / `WuEopgwZqWmtK6JegGLlX1` |
-| Grafana    | http://192.168.56.2xx/       | admin / admin        |
-| App        | http://192.168.56.2xx/       | —                    |
+| Service | URL                         | Credentials                      |
+| ------- | --------------------------- | -------------------------------- |
+| ArgoCD  | http://192.168.56.205/      | admin / `3k70S8iChdGzYR2E`       |
+| Jenkins | http://192.168.56.20:8080/  | see initial password below         |
+| Grafana | http://192.168.56.2xx/      | admin / admin                    |
+| App     | http://192.168.56.2xx/      | —                                |
 
 ---
 
@@ -51,14 +51,14 @@ vagrant up
 
 Provisions all 4 VMs:
 
-| VM            | IP               | Role                                      |
-|---------------|------------------|-------------------------------------------|
-| `k3s-master`  | 192.168.56.10    | k3s server, MetalLB, ArgoCD, Jenkins      |
-| `k3s-worker1` | 192.168.56.11    | k3s agent                                 |
-| `k3s-worker2` | 192.168.56.12    | k3s agent                                 |
-| `jenkins-agent` | 192.168.56.20  | Docker build agent + image registry :5001 |
+| VM              | IP            | Role                                      |
+| --------------- | ------------- | ----------------------------------------- |
+| `k3s-master`    | 192.168.56.10 | k3s server, MetalLB, ArgoCD               |
+| `k3s-worker1`   | 192.168.56.11 | k3s agent                                 |
+| `k3s-worker2`   | 192.168.56.12 | k3s agent                                 |
+| `jenkins-agent` | 192.168.56.20 | Jenkins controller + Docker builds + registry :5001 |
 
-After `vagrant up`, Jenkins needs one manual step — see [Jenkins node setup](#jenkins-node-setup) below.
+After `vagrant up` Jenkins will be running at `http://192.168.56.20:8080`. Get the initial admin password:
 
 ### SSH into a node
 
@@ -74,32 +74,27 @@ vagrant ssh jenkins-agent
 ### How it works
 
 1. Developer pushes code to `https://github.com/AmanHogan/commitment-tracker`
-2. Jenkins (running in k3s) triggers a build on the `docker-agent` node (the `jenkins-agent` VM)
-3. Jenkins builds the Docker image and pushes it to the registry at `192.168.56.20:5001`
+2. Jenkins (running on `192.168.56.20`) polls for new commits and triggers a build
+3. Jenkins builds the Docker image and pushes it to the registry on the same VM at `192.168.56.20:5001`
 4. Jenkins clones the k3s infra repo, updates the image tag in `gitops/<app>/backend.yaml`, and pushes
 5. ArgoCD detects the manifest change and deploys the new image to the cluster
 
-### Jenkins node setup (one-time after `vagrant up`)
+### Jenkins initial setup (one-time after `vagrant up`)
 
-The `jenkins-agent` VM is provisioned automatically, but Jenkins needs to know about it:
+Get the initial admin password:
 
-1. Go to `http://192.168.56.206:8080` → **Manage Jenkins → Nodes → New Node**
-2. Name: `docker-agent`, type: **Permanent Agent**
-3. Remote root directory: `/home/vagrant/jenkins`
-4. Labels: `docker-agent`
-5. Launch method: **Launch agents via SSH**
-6. Host: `192.168.56.20`
-7. Credentials: Add → SSH Username with private key
-   - Username: `vagrant`
-   - Private key: paste contents of `.vagrant/machines/jenkins-agent/virtualbox/private_key`
-8. Host Key Verification Strategy: **Non verifying**
-9. Save — Jenkins will connect and the node will go online
+```bash
+vagrant ssh jenkins-agent -c "docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword"
+```
+
+Then go to `http://192.168.56.20:8080` and complete the setup wizard. Install suggested plugins.
 
 ### Registry
 
 The Docker registry runs on `jenkins-agent` at `192.168.56.20:5001`. All k3s nodes are pre-configured to pull from it (set in `registries.yaml` during provisioning).
 
 To check the registry contents:
+
 ```bash
 vagrant ssh jenkins-agent -c "curl -s http://localhost:5001/v2/_catalog"
 ```
