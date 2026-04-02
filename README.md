@@ -27,12 +27,12 @@ A 3-node k3s Kubernetes cluster with a full GitOps CI/CD pipeline, running in Vi
 └─────────────────────────────────────────────────────────┘
 ```
 
-| Service | URL                         | Credentials                      |
-| ------- | --------------------------- | -------------------------------- |
-| ArgoCD  | http://192.168.56.205/      | admin / `3k70S8iChdGzYR2E`       |
-| Jenkins | http://192.168.56.20:8080/  | see initial password below         |
-| Grafana | http://192.168.56.2xx/      | admin / admin                    |
-| App     | http://192.168.56.2xx/      | —                                |
+| Service | URL                        | Credentials                |
+| ------- | -------------------------- | -------------------------- |
+| ArgoCD  | http://192.168.56.205/     | admin / `3k70S8iChdGzYR2E` |
+| Jenkins | http://192.168.56.20:8080/ | see initial password below |
+| Grafana | http://192.168.56.2xx/     | admin / admin              |
+| App     | http://192.168.56.2xx/     | —                          |
 
 ---
 
@@ -51,11 +51,11 @@ vagrant up
 
 Provisions all 4 VMs:
 
-| VM              | IP            | Role                                      |
-| --------------- | ------------- | ----------------------------------------- |
-| `k3s-master`    | 192.168.56.10 | k3s server, MetalLB, ArgoCD               |
-| `k3s-worker1`   | 192.168.56.11 | k3s agent                                 |
-| `k3s-worker2`   | 192.168.56.12 | k3s agent                                 |
+| VM              | IP            | Role                                                |
+| --------------- | ------------- | --------------------------------------------------- |
+| `k3s-master`    | 192.168.56.10 | k3s server, MetalLB, ArgoCD                         |
+| `k3s-worker1`   | 192.168.56.11 | k3s agent                                           |
+| `k3s-worker2`   | 192.168.56.12 | k3s agent                                           |
 | `jenkins-agent` | 192.168.56.20 | Jenkins controller + Docker builds + registry :5001 |
 
 After `vagrant up` Jenkins will be running at `http://192.168.56.20:8080`. Get the initial admin password:
