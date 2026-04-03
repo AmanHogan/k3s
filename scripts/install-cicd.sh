@@ -1,6 +1,13 @@
 #!/bin/bash
 # install-cicd.sh — install ArgoCD and Jenkins into the running k3s cluster
-# Run this once manually. Future 'vagrant up' will do it automatically via k3s-master.sh.
+# Run this once manually after 'vagrant up'.
+#
+# After this script completes, apply the ArgoCD Application CRs to wire up GitOps:
+#   vagrant ssh k3s-master -c 'kubectl apply -f /vagrant/argocd-apps/'
+#
+# ArgoCD will then auto-sync these paths from Git on every push:
+#   argocd-apps/commitment-tracker.yaml  →  manifests/commitment-tracker/
+#   argocd-apps/mcp-k3s-platform.yaml    →  platform/mcp-k3s/
 set -e
 
 echo ">>> Installing ArgoCD..."

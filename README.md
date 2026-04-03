@@ -81,13 +81,21 @@ vagrant ssh jenkins-agent
 
 ### Jenkins initial setup (one-time after `vagrant up`)
 
-Get the initial admin password:
+Run `./scripts/install-cicd.sh` — it installs Jenkins via Helm and prints the URL + admin password.
+
+Alternatively, get the password manually:
 
 ```bash
-vagrant ssh jenkins-agent -c "docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword"
+vagrant ssh k3s-master -c 'kubectl get secret jenkins -n jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d && echo'
 ```
 
-Then go to `http://192.168.56.20:8080` and complete the setup wizard. Install suggested plugins.
+### CI/CD flow
+
+1. Developer pushes code to the app repo
+2. Jenkins builds the Docker image tagged with the git SHA
+3. Pushes image to registry at `192.168.56.20:5001`
+4. Jenkins updates `manifests/commitment-tracker/spring-commitment-tracker.yaml` with the new image tag and pushes to Git
+5. ArgoCD detects the manifest change and syncs the new deployment to the cluster
 
 ### Registry
 
@@ -115,7 +123,28 @@ gitops/
 
 To add a new application: see [docs/adding-new-apps.md](docs/adding-new-apps.md).
 
-ArgoCD apps are defined in `apps/` and applied during cluster provisioning.
+ArgoCD Application CRs live in `apps/`. Apply them once after ArgoCD is running:
+
+```bash
+vagrant ssh k3s-master -c 'kubectl apply -f /vagrant/argocd-apps/'
+```
+
+| App                                   | Watches path                    |
+| ------------------------------------- | ------------------------------- |
+| `argocd-apps/commitment-tracker.yaml` | `manifests/commitment-tracker/` |
+| `apps/mcp-k3s-platform.yaml`          | `platform/mcp-k3s/`             |
+
+Once applied, ArgoCD auto-syncs from Git on every push — no manual `kubectl apply` needed.
+
+### Get ArgoCD credentials
+
+```bash
+# UI URL
+vagrant ssh k3s-master -c 'kubectl get svc argocd-server -n argocd -o jsonpath="http://{.status.loadBalancer.ingress[0].ip}/" && echo'
+
+# Initial admin password
+vagrant ssh k3s-master -c 'kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d && echo'
+```
 
 ---
 

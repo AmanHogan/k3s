@@ -1,8 +1,7 @@
-# k3s cluster secrets — never commit these
-token
-headlamp.token
-headlamp.token.cmd
-*.token
+# k3s cluster secrets — never commit real tokens
+tokens/*
+!tokens/*.example
+!tokens/README.md
 
 # Vagrant internals
 .vagrant/

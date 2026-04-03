@@ -1,0 +1,6 @@
+# Headlamp dashboard auth token
+# Run this to get your real token:
+#   vagrant ssh k3s-master -c 'kubectl get secret headlamp-token -n kube-system -o jsonpath="{.data.token}" | base64 -d && echo'
+# Paste the output into headlamp.token (gitignored)
+
+eyJhbGciOiJSUzI1NiIsImtpZCI6IkV4YW1wbGVLZXlJZCJ9.<base64-payload>.<base64-signature>

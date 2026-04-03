@@ -36,11 +36,11 @@ kubectl apply -f /vagrant/platform/mongodb/mongodb.yaml
 kubectl apply -f /vagrant/platform/mongodb/mongo-express.yaml
 
 # App deployments
-kubectl apply -f /vagrant/gitops/commitment-tracker/backend.yaml
-kubectl apply -f /vagrant/gitops/commitment-tracker/frontend.yaml
+kubectl apply -f /vagrant/manifests/commitment-tracker/spring-commitment-tracker.yaml
+kubectl apply -f /vagrant/manifests/commitment-tracker/react-commitment-tracker.yaml
 
 # Ingress rules
-kubectl apply -f /vagrant/gitops/commitment-tracker/ingress.yaml
+kubectl apply -f /vagrant/manifests/commitment-tracker/ingress.yaml
 
 # Headlamp dashboard
 kubectl apply -f /vagrant/platform/headlamp/headlamp.yaml

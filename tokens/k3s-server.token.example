@@ -1,0 +1,6 @@
+# k3s server join token — used by worker nodes to join the cluster
+# Run this to get your real token:
+#   vagrant ssh k3s-master -c 'sudo cat /var/lib/rancher/k3s/server/node-token'
+# Paste the output into k3s-server.token (gitignored)
+
+K10<hash>::server:<token>

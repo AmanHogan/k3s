@@ -6,13 +6,13 @@ This guide walks through connecting a new app to the Jenkins + ArgoCD pipeline s
 
 ## Overview of what's needed
 
-| Step | Where | What |
-|------|-------|------|
-| 1 | App repo | Add a `Dockerfile` |
-| 2 | App repo | Add a `Jenkinsfile` |
-| 3 | k3s repo (`gitops/`) | Add Kubernetes manifests |
-| 4 | k3s repo (`apps/`) | Add an ArgoCD Application manifest |
-| 5 | Jenkins UI | Create a new pipeline job |
+| Step | Where                | What                               |
+| ---- | -------------------- | ---------------------------------- |
+| 1    | App repo             | Add a `Dockerfile`                 |
+| 2    | App repo             | Add a `Jenkinsfile`                |
+| 3    | k3s repo (`gitops/`) | Add Kubernetes manifests           |
+| 4    | k3s repo (`apps/`)   | Add an ArgoCD Application manifest |
+| 5    | Jenkins UI           | Create a new pipeline job          |
 
 ---
 
@@ -151,7 +151,7 @@ spec:
     spec:
       containers:
         - name: my-new-app
-          image: 192.168.56.20:5001/my-new-app:latest   # ← Jenkins will update the tag
+          image: 192.168.56.20:5001/my-new-app:latest # ← Jenkins will update the tag
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -162,7 +162,7 @@ metadata:
   name: my-new-app
   namespace: default
 spec:
-  type: LoadBalancer    # MetalLB will assign an external IP
+  type: LoadBalancer # MetalLB will assign an external IP
   selector:
     app: my-new-app
   ports:
@@ -202,7 +202,7 @@ spec:
 Apply it to the cluster:
 
 ```bash
-vagrant ssh k3s-master -- "kubectl apply -f /vagrant/apps/my-new-app.yaml"
+vagrant ssh k3s-master -- "kubectl apply -f /vagrant/argocd-apps/my-new-app.yaml"
 ```
 
 ArgoCD will now watch `gitops/my-new-app/` and deploy any changes automatically.
