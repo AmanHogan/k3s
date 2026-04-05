@@ -2,10 +2,15 @@
 # deploy-all.sh — build, push, and deploy all services to the k3s cluster
 set -e
 
-REGISTRY="192.168.56.20:5001"     # jenkins-agent VM hosts the registry
-HOST_REGISTRY="192.168.56.20:5001"
+BACKEND_PATH="../commitment-tracker/backend"       # Spring Boot app repo
+FRONTEND_PATH="../commitment-tracker/frontend"     # Next.js frontend repo
 
-# ── 1. Ensure local registry is running ─────────────────────────────────────
+# Mac pushes to localhost:5001 (Docker allows HTTP to loopback, no config needed).
+# k3s nodes pull from 192.168.56.1:5001 (Mac's host-only NIC — same registry, different address).
+PUSH_REGISTRY="localhost:5001"          # Mac pushes here
+CLUSTER_REGISTRY="192.168.56.1:5001"    # k8s manifests reference this (VMs pull from Mac)
+
+# ── 1. Ensure local registry is running on Mac ───────────────────────────────
 if ! docker ps --filter "name=^registry$" --filter "status=running" --format '{{.Names}}' | grep -q "^registry$"; then
   echo "Starting local registry on port 5001..."
   docker start registry 2>/dev/null || \
@@ -16,14 +21,14 @@ fi
 # ── 2. Build & push Spring Boot backend ─────────────────────────────────────
 echo ""
 echo ">>> Building commitment-tracker-api..."
-docker build -t ${REGISTRY}/commitment-tracker-api:latest ./backend/commitment-tracker
-docker push ${REGISTRY}/commitment-tracker-api:latest
+docker build -t ${PUSH_REGISTRY}/commitment-tracker-api:latest ${BACKEND_PATH}
+docker push ${PUSH_REGISTRY}/commitment-tracker-api:latest
 
 # ── 3. Build & push React frontend ──────────────────────────────────────────
 echo ""
 echo ">>> Building commitment-tracker-frontend..."
-docker build -t ${REGISTRY}/commitment-tracker-frontend:latest ./frontend/commitment-tracker
-docker push ${REGISTRY}/commitment-tracker-frontend:latest
+docker build -t ${PUSH_REGISTRY}/commitment-tracker-frontend:latest ${FRONTEND_PATH}
+docker push ${PUSH_REGISTRY}/commitment-tracker-frontend:latest
 
 # ── 4. Apply all manifests and restart deployments ──────────────────────────
 echo ""
@@ -32,8 +37,7 @@ vagrant ssh k3s-master -- bash -s << 'EOF'
 set -e
 
 # Infrastructure (idempotent)
-kubectl apply -f /vagrant/platform/mongodb/mongodb.yaml
-kubectl apply -f /vagrant/platform/mongodb/mongo-express.yaml
+kubectl apply -f /vagrant/platform/postgres/postgres.yaml
 
 # App deployments
 kubectl apply -f /vagrant/manifests/commitment-tracker/spring-commitment-tracker.yaml
@@ -53,7 +57,6 @@ echo ""
 echo "Waiting for rollouts..."
 kubectl rollout status deployment/commitment-tracker-api     --timeout=120s
 kubectl rollout status deployment/commitment-tracker-frontend --timeout=120s
-kubectl rollout status deployment/mongo-express               --timeout=120s
 
 echo ""
 echo "=== Pods ==="
@@ -82,7 +85,6 @@ wait_for_ip() {
 }
 
 INGRESS_IP=$(wait_for_ip kube-system traefik)
-MONGO_IP=$(wait_for_ip default mongo-express)
 HEADLAMP_IP=$(wait_for_ip kube-system headlamp)
 
 # Save token for Headlamp login
@@ -92,6 +94,5 @@ kubectl get secret headlamp-token -n kube-system \
 echo ""
 echo "✅  App:           http://${INGRESS_IP}/"
 echo "✅  API:           http://${INGRESS_IP}/api/commitments-one"
-echo "✅  Mongo Express: http://${MONGO_IP}:8081/"
 echo "✅  Headlamp:      http://${HEADLAMP_IP}/"
 EOF

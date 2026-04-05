@@ -2,15 +2,15 @@
 # Allow vagrant user to run sudo without a password
 echo 'vagrant ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vagrant
 
-# Configure k3s to trust the registry running on the jenkins-agent VM (192.168.56.20:5001)
+# Configure k3s to trust the registry running on the host Mac (192.168.56.1:5001)
 mkdir -p /etc/rancher/k3s
 cat > /etc/rancher/k3s/registries.yaml <<EOF
 mirrors:
-  "192.168.56.20:5001":
+  "192.168.56.1:5001":
     endpoint:
-      - "http://192.168.56.20:5001"
+      - "http://192.168.56.1:5001"
 configs:
-  "192.168.56.20:5001":
+  "192.168.56.1:5001":
     tls:
       insecure_skip_verify: true
 EOF
@@ -38,6 +38,17 @@ TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 
 # Store the token for the workers to use
 echo $TOKEN > /vagrant/token
+
+# Patch CoreDNS to use Google DNS (8.8.8.8) as upstream forwarder.
+# The k3s default forwards to /etc/resolv.conf which uses VirtualBox's flaky NAT DNS,
+# causing intermittent failures resolving external names (github.com, etc.) from pods.
+echo "Patching CoreDNS to forward to 8.8.8.8..."
+until kubectl get configmap coredns -n kube-system &>/dev/null; do sleep 2; done
+kubectl get configmap coredns -n kube-system -o yaml \
+  | sed 's|forward . /etc/resolv.conf|forward . 8.8.8.8 8.8.4.4|' \
+  | kubectl apply -f -
+kubectl rollout restart deployment/coredns -n kube-system
+kubectl rollout status deployment/coredns -n kube-system --timeout=60s || true
 
 # Wait for flannel to be ready before installing MetalLB
 # (MetalLB pods will fail with 'subnet.env not found' if flannel isn't up)

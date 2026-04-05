@@ -4,29 +4,6 @@ A 3-node k3s Kubernetes cluster with a full GitOps CI/CD pipeline, running in Vi
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Your Mac                                               │
-│  git push → GitHub ──────────────────────────┐         │
-└─────────────────────────────────────────────┬┘         │
-                                              │           │
-                                     Jenkins webhook      │
-                                              ▼           │
-┌─────────────────────────────────────────────────────────┐
-│  VirtualBox VMs (192.168.56.0/24)                       │
-│                                                         │
-│  jenkins-agent  192.168.56.20                           │
-│    • Runs Jenkins builds (docker build / push)          │
-│    • Hosts Docker registry on :5001                     │
-│    • Pushes image → updates gitops manifest → git push  │
-│                          │                              │
-│                          ▼ ArgoCD detects manifest diff │
-│  k3s-master     192.168.56.10  (+ workers .11, .12)    │
-│    • ArgoCD pulls from GitHub, deploys to cluster       │
-│    • MetalLB assigns IPs 192.168.56.200–.250            │
-└─────────────────────────────────────────────────────────┘
-```
-
 | Service | URL                        | Credentials                |
 | ------- | -------------------------- | -------------------------- |
 | ArgoCD  | http://192.168.56.205/     | admin / `3k70S8iChdGzYR2E` |
@@ -113,7 +90,7 @@ vagrant ssh jenkins-agent -c "curl -s http://localhost:5001/v2/_catalog"
 
 Kubernetes manifests live in `gitops/`. ArgoCD watches this repo and applies any changes automatically.
 
-```
+```bash
 gitops/
   commitment-tracker/
     backend.yaml    ← Deployment + Service for the API

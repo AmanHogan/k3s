@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: default
+type: Opaque
+stringData:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: amanhogan
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: default
+data:
+  init.sql: |
+    -- Complete Database Schema for Commitments App
+
+    -- Business Commitments Table
+    CREATE TABLE IF NOT EXISTS business_commitments (
+      id SERIAL PRIMARY KEY,
+      work_item TEXT NOT NULL,
+      started DATE,
+      date_completed DATE,
+      application_context TEXT,
+      description TEXT,
+      problem_opportunity TEXT,
+      who_benefited TEXT,
+      impact TEXT,
+      value_categories TEXT[],
+      improved_outcomes BOOLEAN DEFAULT false,
+      improved_outcomes_text TEXT,
+      increased_efficiency BOOLEAN DEFAULT false,
+      increased_efficiency_text TEXT,
+      reduced_risk_cost BOOLEAN DEFAULT false,
+      reduced_risk_cost_text TEXT,
+      enhanced_customer_experience BOOLEAN DEFAULT false,
+      enhanced_customer_experience_text TEXT,
+      enhanced_employee_experience BOOLEAN DEFAULT false,
+      enhanced_employee_experience_text TEXT,
+      alignment TEXT,
+      status_notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    -- Learning Items Table (Development Commitment 1)
+    CREATE TABLE IF NOT EXISTS learning_items (
+      id SERIAL PRIMARY KEY,
+      item_name TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Learning Modules Table
+    CREATE TABLE IF NOT EXISTS learning_modules (
+      id SERIAL PRIMARY KEY,
+      item_id INTEGER NOT NULL REFERENCES learning_items(id) ON DELETE CASCADE,
+      module_name TEXT NOT NULL,
+      type TEXT,
+      hours DECIMAL(10, 2),
+      date_started DATE,
+      date_finished DATE,
+      finished BOOLEAN DEFAULT FALSE,
+      required BOOLEAN DEFAULT FALSE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Events Table (Development Commitment 2)
+    CREATE TABLE IF NOT EXISTS events (
+      id SERIAL PRIMARY KEY,
+      event_name TEXT NOT NULL,
+      type TEXT,
+      done BOOLEAN DEFAULT FALSE,
+      started DATE,
+      finished DATE,
+      required BOOLEAN DEFAULT FALSE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Subevents Table
+    CREATE TABLE IF NOT EXISTS subevents (
+      id SERIAL PRIMARY KEY,
+      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      subevent_name TEXT NOT NULL,
+      done BOOLEAN DEFAULT FALSE,
+      started DATE,
+      finished DATE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Innovation Events Table (Business Commitment 2)
+    CREATE TABLE IF NOT EXISTS innovation_events (
+      id SERIAL PRIMARY KEY,
+      event_name TEXT NOT NULL,
+      type TEXT,
+      done BOOLEAN DEFAULT FALSE,
+      started DATE,
+      finished DATE,
+      required BOOLEAN DEFAULT FALSE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Innovation Subevents Table
+    CREATE TABLE IF NOT EXISTS innovation_subevents (
+      id SERIAL PRIMARY KEY,
+      event_id INTEGER NOT NULL REFERENCES innovation_events(id) ON DELETE CASCADE,
+      subevent_name TEXT NOT NULL,
+      done BOOLEAN DEFAULT FALSE,
+      started DATE,
+      finished DATE,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Action Items Table
+    CREATE TABLE IF NOT EXISTS action_items (
+      id SERIAL PRIMARY KEY,
+      action_item TEXT NOT NULL,
+      description TEXT,
+      date_created DATE NOT NULL DEFAULT CURRENT_DATE,
+      due_date DATE,
+      status TEXT DEFAULT 'In Progress',
+      created_at TIMESTAMPTZ DEFAULT now(),
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    -- One-on-One Documents Table
+    CREATE TABLE IF NOT EXISTS one_on_one_documents (
+      id SERIAL PRIMARY KEY,
+      document_date DATE NOT NULL,
+      business_partner_work TEXT,
+      workload_concerns TEXT,
+      utilization_percentage TEXT,
+      tdp_contributions TEXT,
+      training_skills TEXT,
+      pursuing_degrees TEXT,
+      compliance_percentage TEXT,
+      ehs_training_percentage TEXT,
+      growth_hub_progress TEXT,
+      success_pathways_updated TEXT,
+      contingency_training_percentage TEXT,
+      innovation_events TEXT,
+      accomplishments TEXT,
+      challenges TEXT,
+      goals TEXT,
+      questions TEXT,
+      receiving_support TEXT,
+      additional_items TEXT,
+      out_of_office_plans TEXT,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+
+    -- Accomplishments Table
+    CREATE TABLE IF NOT EXISTS accomplishments (
+      id SERIAL PRIMARY KEY,
+      accomplishment TEXT NOT NULL,
+      category TEXT,
+      due_date DATE,
+      status TEXT DEFAULT 'In Progress',
+      created_at TIMESTAMPTZ DEFAULT now(),
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: default
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-sql
+          configMap:
+            name: postgres-init
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: default
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -13,25 +13,34 @@ spec:
       labels:
         app: commitment-tracker-api
     spec:
-      # Wait for MongoDB to accept connections before starting Spring Boot
       initContainers:
-        - name: wait-for-mongo
+        - name: wait-for-postgres
           image: busybox:1.36
           command:
             [
               "sh",
               "-c",
-              "until nc -z mongodb 27017; do echo waiting for mongodb; sleep 2; done",
+              "until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done",
             ]
       containers:
         - name: commitment-tracker-api
-          image: 192.168.56.20:5001/commitment-tracker-api:7f060bb
+          image: 192.168.56.1:5001/commitment-tracker-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
-            - name: MONGODB_URI
-              value: "mongodb://admin:password123@mongodb:27017/commitment_tracker?authSource=admin"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres:5432/amanhogan"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
 ---
 apiVersion: v1
 kind: Service

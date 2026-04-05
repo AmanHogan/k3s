@@ -67,6 +67,7 @@ vagrant ssh k3s-master -c 'kubectl logs -n monitoring -l app.kubernetes.io/name=
 ```
 
 > **Loki query example** (Grafana → Explore → Loki datasource):
+>
 > ```
 > {namespace="default", app="commitment-tracker-api"}
 > ```
