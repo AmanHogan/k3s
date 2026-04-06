@@ -24,7 +24,7 @@ spec:
             ]
       containers:
         - name: commitment-tracker-api
-          image: 192.168.56.20:5001/commitment-tracker-api:56242bb
+          image: 192.168.56.20:5001/commitment-tracker-api:cbcc4dc
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
