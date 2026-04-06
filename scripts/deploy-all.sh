@@ -36,9 +36,6 @@ echo ">>> Applying Kubernetes manifests..."
 vagrant ssh k3s-master -- bash -s << 'EOF'
 set -e
 
-# Infrastructure (idempotent)
-kubectl apply -f /vagrant/platform/postgres/postgres.yaml
-
 # App deployments
 kubectl apply -f /vagrant/manifests/commitment-tracker/spring-commitment-tracker.yaml
 kubectl apply -f /vagrant/manifests/commitment-tracker/react-commitment-tracker.yaml
