@@ -9,5 +9,3 @@ controller:
     - ssh-slaves:latest
     - credentials:latest
     - ssh-credentials:latest
-
-
