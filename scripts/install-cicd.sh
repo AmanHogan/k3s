@@ -18,8 +18,21 @@ kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"LoadBalancer"}}'
 echo "ArgoCD applied. Pods will come up as images pull."
 EOF
 
-echo ""
 echo ">>> Installing Jenkins..."
+# Create the SSH key secret so JCasC can configure the jenkins-agent node
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+KEY_PATH="${SCRIPT_DIR}/../.vagrant/machines/jenkins-agent/virtualbox/private_key"
+if [ -f "$KEY_PATH" ]; then
+  vagrant ssh k3s-master -- bash -s << INNER
+kubectl create secret generic jenkins-agent-ssh-key \
+  --from-file=privateKey=/vagrant/.vagrant/machines/jenkins-agent/virtualbox/private_key \
+  -n jenkins --dry-run=client -o yaml | kubectl apply -f -
+INNER
+else
+  echo "Warning: jenkins-agent private key not found at $KEY_PATH — skipping secret creation."
+  echo "         Run 'vagrant up jenkins-agent' first, then re-run this script."
+fi
+
 vagrant ssh k3s-master -- bash -s << 'EOF'
 helm repo add jenkins https://charts.jenkins.io 2>/dev/null || true
 helm repo update
