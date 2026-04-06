@@ -15,10 +15,10 @@ spec:
     spec:
       containers:
         - name: commitment-tracker-frontend
-          image: 192.168.56.1:5001/commitment-tracker-frontend:latest
+          image: 192.168.56.20:5001/commitment-tracker-frontend:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: 3000
 ---
 apiVersion: v1
 kind: Service
@@ -29,5 +29,5 @@ spec:
   selector:
     app: commitment-tracker-frontend
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 3000
+      targetPort: 3000
