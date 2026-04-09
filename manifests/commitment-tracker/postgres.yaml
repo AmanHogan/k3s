@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-secret
-  namespace: default
+  namespace: commitment-tracker
 type: Opaque
 stringData:
   POSTGRES_USER: postgres
@@ -13,7 +13,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-init
-  namespace: default
+  namespace: commitment-tracker
 data:
   init.sql: |
     -- Complete Database Schema for Commitments App
@@ -177,7 +177,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
-  namespace: default
+  namespace: commitment-tracker
 spec:
   serviceName: postgres
   replicas: 1
@@ -219,7 +219,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: default
+  namespace: commitment-tracker
 spec:
   selector:
     app: postgres

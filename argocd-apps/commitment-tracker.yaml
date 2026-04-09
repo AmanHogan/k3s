@@ -11,7 +11,7 @@ spec:
     path: manifests/commitment-tracker
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: commitment-tracker
   syncPolicy:
     automated:
       prune: true # delete resources removed from git
