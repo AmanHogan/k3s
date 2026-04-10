@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: commitment-tracker-frontend
-          image: 192.168.56.20:5001/commitment-tracker-frontend:cbcc4dc
+          image: 192.168.56.20:5001/commitment-tracker-frontend:e834c4a
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
