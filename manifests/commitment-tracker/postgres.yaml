@@ -28,7 +28,6 @@ data:
     SET statement_timeout = 0;
     SET lock_timeout = 0;
     SET idle_in_transaction_session_timeout = 0;
-    SET transaction_timeout = 0;
     SET client_encoding = 'UTF8';
     SET standard_conforming_strings = on;
     SELECT pg_catalog.set_config('search_path', '', false);
@@ -879,7 +878,7 @@ data:
     -- PostgreSQL database dump complete
     --
 
-    CREATE TABLE IF NOT EXISTS skills (
+    CREATE TABLE IF NOT EXISTS public.skills (
         id          SERIAL PRIMARY KEY,
         name        VARCHAR(255) NOT NULL,
         proficiency INTEGER      NOT NULL CHECK (proficiency BETWEEN 1 AND 5),
@@ -905,7 +904,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16
+          image: postgres:17
           ports:
             - containerPort: 5432
           envFrom:
