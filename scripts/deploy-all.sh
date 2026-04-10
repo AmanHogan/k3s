@@ -5,17 +5,16 @@ set -e
 BACKEND_PATH="../commitment-tracker/backend"       # Spring Boot app repo
 FRONTEND_PATH="../commitment-tracker/frontend"     # Next.js frontend repo
 
-# Mac pushes to localhost:5001 (Docker allows HTTP to loopback, no config needed).
-# k3s nodes pull from 192.168.56.1:5001 (Mac's host-only NIC — same registry, different address).
-PUSH_REGISTRY="localhost:5001"          # Mac pushes here
-CLUSTER_REGISTRY="192.168.56.1:5001"    # k8s manifests reference this (VMs pull from Mac)
+# Push images to the registry on the Jenkins agent VM.
+# k3s nodes also pull from 192.168.56.20:5001 in Option A.
+PUSH_REGISTRY="192.168.56.20:5001"          # Push images to Jenkins registry
+CLUSTER_REGISTRY="192.168.56.20:5001"       # k8s manifests reference this (VMs pull from Jenkins agent)
 
-# ── 1. Ensure local registry is running on Mac ───────────────────────────────
-if ! docker ps --filter "name=^registry$" --filter "status=running" --format '{{.Names}}' | grep -q "^registry$"; then
-  echo "Starting local registry on port 5001..."
-  docker start registry 2>/dev/null || \
-    docker run -d -p 5001:5000 --restart=always --name registry \
-      -v ~/registry-data:/var/lib/registry registry:2
+# ── 1. Ensure the Jenkins-agent registry is reachable ───────────────────────
+if ! curl -fsS http://192.168.56.20:5001/v2/ >/dev/null 2>&1; then
+  echo "ERROR: Registry at 192.168.56.20:5001 is not reachable."
+  echo "Start the Jenkins agent VM and ensure the registry is running."
+  exit 1
 fi
 
 # ── 2. Build & push Spring Boot backend ─────────────────────────────────────
@@ -34,7 +33,13 @@ docker push ${PUSH_REGISTRY}/commitment-tracker-frontend:latest
 echo ""
 echo ">>> Applying Kubernetes manifests..."
 vagrant ssh k3s-master -- bash -s << 'EOF'
-set -e
+# (no set -e — rollout timeouts are non-fatal so we always print IPs)
+
+# Namespace must exist before everything else
+kubectl apply -f /vagrant/manifests/commitment-tracker/namespace.yaml
+
+# Postgres (Secret, ConfigMap, StatefulSet, Service)
+kubectl apply -f /vagrant/manifests/commitment-tracker/postgres.yaml
 
 # App deployments
 kubectl apply -f /vagrant/manifests/commitment-tracker/spring-commitment-tracker.yaml
@@ -46,26 +51,59 @@ kubectl apply -f /vagrant/manifests/commitment-tracker/ingress.yaml
 # Headlamp dashboard
 kubectl apply -f /vagrant/platform/headlamp/headlamp.yaml
 
+# ── ArgoCD Application CR ────────────────────────────────────────────────────
+# Re-apply on every deploy so destination namespace never drifts from the repo.
+kubectl apply -f /vagrant/argocd-apps/commitment-tracker.yaml
+
+# ── ArgoCD repo-server health check ─────────────────────────────────────────
+# If the repo-server pod is stuck in Unknown, force-delete it so it reschedules.
+REPO_SERVER_STATUS=$(kubectl get pod -n argocd -l app.kubernetes.io/name=argocd-repo-server \
+  -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "Missing")
+if [ "$REPO_SERVER_STATUS" != "Running" ]; then
+  echo "⚠️  argocd-repo-server is $REPO_SERVER_STATUS — force-deleting to reschedule..."
+  kubectl delete pod -n argocd -l app.kubernetes.io/name=argocd-repo-server \
+    --force --grace-period=0 2>/dev/null || true
+  # Wait up to 60s for it to come back
+  for i in $(seq 1 20); do
+    STATUS=$(kubectl get pod -n argocd -l app.kubernetes.io/name=argocd-repo-server \
+      -o jsonpath='{.items[0].status.phase}' 2>/dev/null)
+    [ "$STATUS" = "Running" ] && echo "✅  argocd-repo-server recovered" && break
+    sleep 3
+  done
+fi
+
+# Force ArgoCD to re-compare manifests after every deploy
+kubectl annotate application commitment-tracker -n argocd \
+  argocd.argoproj.io/refresh=hard --overwrite 2>/dev/null || true
+
+# Wait for Postgres (non-blocking — app pods will retry via init container)
+echo ""
+echo "Waiting for Postgres to be ready (non-blocking)..."
+kubectl rollout status statefulset/postgres -n commitment-tracker --timeout=60s || \
+  echo "⚠️  Postgres not ready yet — app pods will retry automatically via init container"
+
 # Force pods to re-pull the latest image
-kubectl rollout restart deployment/commitment-tracker-api
-kubectl rollout restart deployment/commitment-tracker-frontend
+kubectl rollout restart deployment/commitment-tracker-api     -n commitment-tracker
+kubectl rollout restart deployment/commitment-tracker-frontend -n commitment-tracker
 
 echo ""
-echo "Waiting for rollouts..."
-kubectl rollout status deployment/commitment-tracker-api     --timeout=120s
-kubectl rollout status deployment/commitment-tracker-frontend --timeout=120s
+echo "Waiting for rollouts (non-blocking — continuing to show IPs regardless)..."
+kubectl rollout status deployment/commitment-tracker-api     -n commitment-tracker --timeout=180s || \
+  echo "⚠️  API rollout still in progress — check 'kubectl get pods -n commitment-tracker'"
+kubectl rollout status deployment/commitment-tracker-frontend -n commitment-tracker --timeout=60s || \
+  echo "⚠️  Frontend rollout still in progress"
 
 echo ""
 echo "=== Pods ==="
-kubectl get pods
+kubectl get pods -n commitment-tracker
 
 echo ""
 echo "=== Services ==="
-kubectl get svc
+kubectl get svc -n commitment-tracker
 
 echo ""
 echo "=== Ingress ==="
-kubectl get ingress
+kubectl get ingress -n commitment-tracker
 
 echo ""
 echo "Waiting for MetalLB to assign external IPs (this can take ~60s)..."
