@@ -16,160 +16,875 @@ metadata:
   namespace: commitment-tracker
 data:
   init.sql: |
-    -- Complete Database Schema for Commitments App
+    -- PostgreSQL database dump
+    --
 
-    -- Business Commitments Table
-    CREATE TABLE IF NOT EXISTS business_commitments (
-      id SERIAL PRIMARY KEY,
-      work_item TEXT NOT NULL,
-      started DATE,
-      date_completed DATE,
-      application_context TEXT,
-      description TEXT,
-      problem_opportunity TEXT,
-      who_benefited TEXT,
-      impact TEXT,
-      value_categories TEXT[],
-      improved_outcomes BOOLEAN DEFAULT false,
-      improved_outcomes_text TEXT,
-      increased_efficiency BOOLEAN DEFAULT false,
-      increased_efficiency_text TEXT,
-      reduced_risk_cost BOOLEAN DEFAULT false,
-      reduced_risk_cost_text TEXT,
-      enhanced_customer_experience BOOLEAN DEFAULT false,
-      enhanced_customer_experience_text TEXT,
-      enhanced_employee_experience BOOLEAN DEFAULT false,
-      enhanced_employee_experience_text TEXT,
-      alignment TEXT,
-      status_notes TEXT,
-      created_at TIMESTAMPTZ DEFAULT now()
+
+    -- Dumped from database version 18.3 (Postgres.app)
+    -- Dumped by pg_dump version 18.2
+
+    -- Started on 2026-04-09 12:17:13 CDT
+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET transaction_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    SET default_table_access_method = heap;
+
+    --
+    -- TOC entry 236 (class 1259 OID 16541)
+    -- Name: accomplishments; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.accomplishments (
+        id integer NOT NULL,
+        accomplishment text NOT NULL,
+        category text,
+        due_date date,
+        status text DEFAULT 'In Progress'::text,
+        created_at timestamp with time zone DEFAULT now(),
+        updated_at timestamp with time zone DEFAULT now()
     );
 
-    -- Learning Items Table (Development Commitment 1)
-    CREATE TABLE IF NOT EXISTS learning_items (
-      id SERIAL PRIMARY KEY,
-      item_name TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.accomplishments OWNER TO postgres;
+
+    --
+    -- TOC entry 235 (class 1259 OID 16540)
+    -- Name: accomplishments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.accomplishments_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.accomplishments_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3961 (class 0 OID 0)
+    -- Dependencies: 235
+    -- Name: accomplishments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.accomplishments_id_seq OWNED BY public.accomplishments.id;
+
+    --
+    -- TOC entry 240 (class 1259 OID 16583)
+    -- Name: action_items; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.action_items (
+        id integer NOT NULL,
+        name character varying(255) NOT NULL,
+        criticality character varying(50),
+        date_started date,
+        date_finished date,
+        created_at timestamp without time zone DEFAULT now() NOT NULL,
+        updated_at timestamp without time zone DEFAULT now() NOT NULL
     );
 
-    -- Learning Modules Table
-    CREATE TABLE IF NOT EXISTS learning_modules (
-      id SERIAL PRIMARY KEY,
-      item_id INTEGER NOT NULL REFERENCES learning_items(id) ON DELETE CASCADE,
-      module_name TEXT NOT NULL,
-      type TEXT,
-      hours DECIMAL(10, 2),
-      date_started DATE,
-      date_finished DATE,
-      finished BOOLEAN DEFAULT FALSE,
-      required BOOLEAN DEFAULT FALSE,
-      description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.action_items OWNER TO postgres;
+
+    --
+    -- TOC entry 239 (class 1259 OID 16582)
+    -- Name: action_items_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.action_items_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.action_items_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3962 (class 0 OID 0)
+    -- Dependencies: 239
+    -- Name: action_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.action_items_id_seq OWNED BY public.action_items.id;
+
+    --
+    -- TOC entry 220 (class 1259 OID 16391)
+    -- Name: business_commitments; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.business_commitments (
+        id integer NOT NULL,
+        work_item text NOT NULL,
+        started date,
+        date_completed date,
+        application_context text,
+        description text,
+        problem_opportunity text,
+        who_benefited text,
+        impact text,
+        value_categories text[],
+        improved_outcomes boolean DEFAULT false,
+        improved_outcomes_text text,
+        increased_efficiency boolean DEFAULT false,
+        increased_efficiency_text text,
+        reduced_risk_cost boolean DEFAULT false,
+        reduced_risk_cost_text text,
+        enhanced_customer_experience boolean DEFAULT false,
+        enhanced_customer_experience_text text,
+        enhanced_employee_experience boolean DEFAULT false,
+        enhanced_employee_experience_text text,
+        alignment text,
+        status_notes text,
+        created_at timestamp with time zone DEFAULT now()
     );
 
-    -- Events Table (Development Commitment 2)
-    CREATE TABLE IF NOT EXISTS events (
-      id SERIAL PRIMARY KEY,
-      event_name TEXT NOT NULL,
-      type TEXT,
-      done BOOLEAN DEFAULT FALSE,
-      started DATE,
-      finished DATE,
-      required BOOLEAN DEFAULT FALSE,
-      description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.business_commitments OWNER TO postgres;
+
+    --
+    -- TOC entry 219 (class 1259 OID 16390)
+    -- Name: business_commitments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.business_commitments_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.business_commitments_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3963 (class 0 OID 0)
+    -- Dependencies: 219
+    -- Name: business_commitments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.business_commitments_id_seq OWNED BY public.business_commitments.id;
+
+    --
+    -- TOC entry 238 (class 1259 OID 16559)
+    -- Name: event_sub_items; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.event_sub_items (
+        id integer NOT NULL,
+        event_id integer NOT NULL,
+        sub_event_name text NOT NULL,
+        description text,
+        started date,
+        finished date,
+        done boolean,
+        created_at timestamp with time zone DEFAULT now(),
+        updated_at timestamp with time zone DEFAULT now()
     );
 
-    -- Subevents Table
-    CREATE TABLE IF NOT EXISTS subevents (
-      id SERIAL PRIMARY KEY,
-      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-      subevent_name TEXT NOT NULL,
-      done BOOLEAN DEFAULT FALSE,
-      started DATE,
-      finished DATE,
-      description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.event_sub_items OWNER TO postgres;
+
+    --
+    -- TOC entry 237 (class 1259 OID 16558)
+    -- Name: event_sub_items_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.event_sub_items_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.event_sub_items_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3964 (class 0 OID 0)
+    -- Dependencies: 237
+    -- Name: event_sub_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.event_sub_items_id_seq OWNED BY public.event_sub_items.id;
+
+    --
+    -- TOC entry 226 (class 1259 OID 16442)
+    -- Name: events; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.events (
+        id integer NOT NULL,
+        event_name text NOT NULL,
+        type text,
+        done boolean DEFAULT false,
+        started date,
+        finished date,
+        required boolean DEFAULT false,
+        description text,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Innovation Events Table (Business Commitment 2)
-    CREATE TABLE IF NOT EXISTS innovation_events (
-      id SERIAL PRIMARY KEY,
-      event_name TEXT NOT NULL,
-      type TEXT,
-      done BOOLEAN DEFAULT FALSE,
-      started DATE,
-      finished DATE,
-      required BOOLEAN DEFAULT FALSE,
-      description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.events OWNER TO postgres;
+
+    --
+    -- TOC entry 225 (class 1259 OID 16441)
+    -- Name: events_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.events_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.events_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3965 (class 0 OID 0)
+    -- Dependencies: 225
+    -- Name: events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.events_id_seq OWNED BY public.events.id;
+
+    --
+    -- TOC entry 230 (class 1259 OID 16477)
+    -- Name: innovation_events; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.innovation_events (
+        id integer NOT NULL,
+        event_name text NOT NULL,
+        type text,
+        done boolean DEFAULT false,
+        started date,
+        finished date,
+        required boolean DEFAULT false,
+        description text,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Innovation Subevents Table
-    CREATE TABLE IF NOT EXISTS innovation_subevents (
-      id SERIAL PRIMARY KEY,
-      event_id INTEGER NOT NULL REFERENCES innovation_events(id) ON DELETE CASCADE,
-      subevent_name TEXT NOT NULL,
-      done BOOLEAN DEFAULT FALSE,
-      started DATE,
-      finished DATE,
-      description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    ALTER TABLE public.innovation_events OWNER TO postgres;
+
+    --
+    -- TOC entry 229 (class 1259 OID 16476)
+    -- Name: innovation_events_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.innovation_events_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.innovation_events_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3966 (class 0 OID 0)
+    -- Dependencies: 229
+    -- Name: innovation_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.innovation_events_id_seq OWNED BY public.innovation_events.id;
+
+    --
+    -- TOC entry 232 (class 1259 OID 16492)
+    -- Name: innovation_subevents; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.innovation_subevents (
+        id integer NOT NULL,
+        event_id integer NOT NULL,
+        subevent_name text NOT NULL,
+        done boolean DEFAULT false,
+        started date,
+        finished date,
+        description text,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Action Items Table
-    CREATE TABLE IF NOT EXISTS action_items (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      criticality VARCHAR(50),
-      date_started DATE,
-      date_finished DATE,
-      created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-      updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+
+    ALTER TABLE public.innovation_subevents OWNER TO postgres;
+
+    --
+    -- TOC entry 231 (class 1259 OID 16491)
+    -- Name: innovation_subevents_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.innovation_subevents_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.innovation_subevents_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3967 (class 0 OID 0)
+    -- Dependencies: 231
+    -- Name: innovation_subevents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.innovation_subevents_id_seq OWNED BY public.innovation_subevents.id;
+
+    --
+    -- TOC entry 242 (class 1259 OID 16635)
+    -- Name: leadership_events; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.leadership_events (
+        id integer NOT NULL,
+        event_name character varying(255) NOT NULL,
+        type character varying(255),
+        done boolean,
+        started date,
+        finished date,
+        required boolean,
+        description text,
+        created_at timestamp without time zone,
+        updated_at timestamp without time zone
     );
 
-    -- One-on-One Documents Table
-    CREATE TABLE IF NOT EXISTS one_on_one_documents (
-      id SERIAL PRIMARY KEY,
-      document_date DATE NOT NULL,
-      business_partner_work TEXT,
-      workload_concerns TEXT,
-      utilization_percentage TEXT,
-      tdp_contributions TEXT,
-      training_skills TEXT,
-      pursuing_degrees TEXT,
-      compliance_percentage TEXT,
-      ehs_training_percentage TEXT,
-      growth_hub_progress TEXT,
-      success_pathways_updated TEXT,
-      contingency_training_percentage TEXT,
-      innovation_events TEXT,
-      accomplishments TEXT,
-      challenges TEXT,
-      goals TEXT,
-      questions TEXT,
-      receiving_support TEXT,
-      additional_items TEXT,
-      out_of_office_plans TEXT,
-      created_at TIMESTAMPTZ DEFAULT now(),
-      updated_at TIMESTAMPTZ DEFAULT now()
+
+    ALTER TABLE public.leadership_events OWNER TO postgres;
+
+    --
+    -- TOC entry 241 (class 1259 OID 16634)
+    -- Name: leadership_events_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.leadership_events_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.leadership_events_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3968 (class 0 OID 0)
+    -- Dependencies: 241
+    -- Name: leadership_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.leadership_events_id_seq OWNED BY public.leadership_events.id;
+
+    --
+    -- TOC entry 244 (class 1259 OID 16646)
+    -- Name: leadership_subevents; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.leadership_subevents (
+        id integer NOT NULL,
+        event_id integer NOT NULL,
+        subevent_name character varying(255) CONSTRAINT leadership_subevents_sub_event_name_not_null NOT NULL,
+        done boolean,
+        started date,
+        finished date,
+        description text,
+        created_at timestamp without time zone,
+        updated_at timestamp without time zone
     );
 
-    -- Accomplishments Table
-    CREATE TABLE IF NOT EXISTS accomplishments (
-      id SERIAL PRIMARY KEY,
-      accomplishment TEXT NOT NULL,
-      category TEXT,
-      due_date DATE,
-      status TEXT DEFAULT 'In Progress',
-      created_at TIMESTAMPTZ DEFAULT now(),
-      updated_at TIMESTAMPTZ DEFAULT now()
+
+    ALTER TABLE public.leadership_subevents OWNER TO postgres;
+
+    --
+    -- TOC entry 243 (class 1259 OID 16645)
+    -- Name: leadership_subevents_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.leadership_subevents_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.leadership_subevents_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3969 (class 0 OID 0)
+    -- Dependencies: 243
+    -- Name: leadership_subevents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.leadership_subevents_id_seq OWNED BY public.leadership_subevents.id;
+
+    --
+    -- TOC entry 222 (class 1259 OID 16408)
+    -- Name: learning_items; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.learning_items (
+        id integer NOT NULL,
+        item_name text NOT NULL,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+    ALTER TABLE public.learning_items OWNER TO postgres;
+
+    --
+    -- TOC entry 221 (class 1259 OID 16407)
+    -- Name: learning_items_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.learning_items_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.learning_items_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3970 (class 0 OID 0)
+    -- Dependencies: 221
+    -- Name: learning_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.learning_items_id_seq OWNED BY public.learning_items.id;
+
+    --
+    -- TOC entry 224 (class 1259 OID 16421)
+    -- Name: learning_modules; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.learning_modules (
+        id integer NOT NULL,
+        item_id integer NOT NULL,
+        module_name text NOT NULL,
+        type text,
+        hours numeric(10,2),
+        date_started date,
+        date_finished date,
+        finished boolean DEFAULT false,
+        required boolean DEFAULT false,
+        description text,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+    ALTER TABLE public.learning_modules OWNER TO postgres;
+
+    --
+    -- TOC entry 223 (class 1259 OID 16420)
+    -- Name: learning_modules_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.learning_modules_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.learning_modules_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3971 (class 0 OID 0)
+    -- Dependencies: 223
+    -- Name: learning_modules_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.learning_modules_id_seq OWNED BY public.learning_modules.id;
+
+    --
+    -- TOC entry 234 (class 1259 OID 16528)
+    -- Name: one_on_one_documents; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.one_on_one_documents (
+        id integer NOT NULL,
+        document_date date NOT NULL,
+        business_partner_work text,
+        workload_concerns text,
+        utilization_percentage text,
+        tdp_contributions text,
+        training_skills text,
+        pursuing_degrees text,
+        compliance_percentage text,
+        ehs_training_percentage text,
+        growth_hub_progress text,
+        success_pathways_updated text,
+        contingency_training_percentage text,
+        innovation_events text,
+        accomplishments text,
+        challenges text,
+        goals text,
+        questions text,
+        receiving_support text,
+        additional_items text,
+        out_of_office_plans text,
+        created_at timestamp with time zone DEFAULT now(),
+        updated_at timestamp with time zone DEFAULT now()
+    );
+
+
+    ALTER TABLE public.one_on_one_documents OWNER TO postgres;
+
+    --
+    -- TOC entry 233 (class 1259 OID 16527)
+    -- Name: one_on_one_documents_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.one_on_one_documents_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.one_on_one_documents_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3972 (class 0 OID 0)
+    -- Dependencies: 233
+    -- Name: one_on_one_documents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.one_on_one_documents_id_seq OWNED BY public.one_on_one_documents.id;
+
+    --
+    -- TOC entry 228 (class 1259 OID 16457)
+    -- Name: subevents; Type: TABLE; Schema: public; Owner: postgres
+    --
+
+    CREATE TABLE public.subevents (
+        id integer NOT NULL,
+        event_id integer NOT NULL,
+        subevent_name text NOT NULL,
+        done boolean DEFAULT false,
+        started date,
+        finished date,
+        description text,
+        created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+    ALTER TABLE public.subevents OWNER TO postgres;
+
+    --
+    -- TOC entry 227 (class 1259 OID 16456)
+    -- Name: subevents_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+    --
+
+    CREATE SEQUENCE public.subevents_id_seq
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        NO MINVALUE
+        NO MAXVALUE
+        CACHE 1;
+
+
+    ALTER SEQUENCE public.subevents_id_seq OWNER TO postgres;
+
+    --
+    -- TOC entry 3973 (class 0 OID 0)
+    -- Dependencies: 227
+    -- Name: subevents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+    --
+
+    ALTER SEQUENCE public.subevents_id_seq OWNED BY public.subevents.id;
+
+    --
+    -- TOC entry 3766 (class 2604 OID 16544)
+    -- Name: accomplishments id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.accomplishments ALTER COLUMN id SET DEFAULT nextval('public.accomplishments_id_seq'::regclass);
+
+    --
+    -- TOC entry 3773 (class 2604 OID 16586)
+    -- Name: action_items id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.action_items ALTER COLUMN id SET DEFAULT nextval('public.action_items_id_seq'::regclass);
+
+    --
+    -- TOC entry 3730 (class 2604 OID 16394)
+    -- Name: business_commitments id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.business_commitments ALTER COLUMN id SET DEFAULT nextval('public.business_commitments_id_seq'::regclass);
+
+    --
+    -- TOC entry 3770 (class 2604 OID 16562)
+    -- Name: event_sub_items id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.event_sub_items ALTER COLUMN id SET DEFAULT nextval('public.event_sub_items_id_seq'::regclass);
+
+    --
+    -- TOC entry 3745 (class 2604 OID 16445)
+    -- Name: events id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.events ALTER COLUMN id SET DEFAULT nextval('public.events_id_seq'::regclass);
+
+    --
+    -- TOC entry 3754 (class 2604 OID 16480)
+    -- Name: innovation_events id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.innovation_events ALTER COLUMN id SET DEFAULT nextval('public.innovation_events_id_seq'::regclass);
+
+    --
+    -- TOC entry 3759 (class 2604 OID 16495)
+    -- Name: innovation_subevents id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.innovation_subevents ALTER COLUMN id SET DEFAULT nextval('public.innovation_subevents_id_seq'::regclass);
+
+    --
+    -- TOC entry 3776 (class 2604 OID 16638)
+    -- Name: leadership_events id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.leadership_events ALTER COLUMN id SET DEFAULT nextval('public.leadership_events_id_seq'::regclass);
+
+    --
+    -- TOC entry 3777 (class 2604 OID 16649)
+    -- Name: leadership_subevents id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.leadership_subevents ALTER COLUMN id SET DEFAULT nextval('public.leadership_subevents_id_seq'::regclass);
+
+    --
+    -- TOC entry 3737 (class 2604 OID 16411)
+    -- Name: learning_items id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.learning_items ALTER COLUMN id SET DEFAULT nextval('public.learning_items_id_seq'::regclass);
+
+    --
+    -- TOC entry 3740 (class 2604 OID 16424)
+    -- Name: learning_modules id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.learning_modules ALTER COLUMN id SET DEFAULT nextval('public.learning_modules_id_seq'::regclass);
+
+    --
+    -- TOC entry 3763 (class 2604 OID 16531)
+    -- Name: one_on_one_documents id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.one_on_one_documents ALTER COLUMN id SET DEFAULT nextval('public.one_on_one_documents_id_seq'::regclass);
+
+    --
+    -- TOC entry 3750 (class 2604 OID 16460)
+    -- Name: subevents id; Type: DEFAULT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.subevents ALTER COLUMN id SET DEFAULT nextval('public.subevents_id_seq'::regclass);
+
+    --
+    -- TOC entry 3795 (class 2606 OID 16553)
+    -- Name: accomplishments accomplishments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.accomplishments
+        ADD CONSTRAINT accomplishments_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3799 (class 2606 OID 16594)
+    -- Name: action_items action_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.action_items
+        ADD CONSTRAINT action_items_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3779 (class 2606 OID 16406)
+    -- Name: business_commitments business_commitments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.business_commitments
+        ADD CONSTRAINT business_commitments_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3797 (class 2606 OID 16571)
+    -- Name: event_sub_items event_sub_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.event_sub_items
+        ADD CONSTRAINT event_sub_items_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3785 (class 2606 OID 16455)
+    -- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.events
+        ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3789 (class 2606 OID 16490)
+    -- Name: innovation_events innovation_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.innovation_events
+        ADD CONSTRAINT innovation_events_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3791 (class 2606 OID 16505)
+    -- Name: innovation_subevents innovation_subevents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.innovation_subevents
+        ADD CONSTRAINT innovation_subevents_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3801 (class 2606 OID 16644)
+    -- Name: leadership_events leadership_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.leadership_events
+        ADD CONSTRAINT leadership_events_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3803 (class 2606 OID 16656)
+    -- Name: leadership_subevents leadership_subevents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.leadership_subevents
+        ADD CONSTRAINT leadership_subevents_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3781 (class 2606 OID 16419)
+    -- Name: learning_items learning_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.learning_items
+        ADD CONSTRAINT learning_items_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3783 (class 2606 OID 16435)
+    -- Name: learning_modules learning_modules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.learning_modules
+        ADD CONSTRAINT learning_modules_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3793 (class 2606 OID 16539)
+    -- Name: one_on_one_documents one_on_one_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.one_on_one_documents
+        ADD CONSTRAINT one_on_one_documents_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3787 (class 2606 OID 16470)
+    -- Name: subevents subevents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.subevents
+        ADD CONSTRAINT subevents_pkey PRIMARY KEY (id);
+
+    --
+    -- TOC entry 3807 (class 2606 OID 16572)
+    -- Name: event_sub_items event_sub_items_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.event_sub_items
+        ADD CONSTRAINT event_sub_items_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.innovation_events(id) ON DELETE CASCADE;
+
+    --
+    -- TOC entry 3806 (class 2606 OID 16506)
+    -- Name: innovation_subevents innovation_subevents_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.innovation_subevents
+        ADD CONSTRAINT innovation_subevents_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.innovation_events(id) ON DELETE CASCADE;
+
+    --
+    -- TOC entry 3808 (class 2606 OID 16657)
+    -- Name: leadership_subevents leadership_subevents_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.leadership_subevents
+        ADD CONSTRAINT leadership_subevents_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.leadership_events(id);
+
+    --
+    -- TOC entry 3804 (class 2606 OID 16436)
+    -- Name: learning_modules learning_modules_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.learning_modules
+        ADD CONSTRAINT learning_modules_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.learning_items(id) ON DELETE CASCADE;
+
+    --
+    -- TOC entry 3805 (class 2606 OID 16471)
+    -- Name: subevents subevents_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+    --
+
+    ALTER TABLE ONLY public.subevents
+        ADD CONSTRAINT subevents_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+    -- Completed on 2026-04-09 12:17:13 CDT
+    --
+
+    -- PostgreSQL database dump complete
+    --
+
+    CREATE TABLE IF NOT EXISTS skills (
+        id          SERIAL PRIMARY KEY,
+        name        VARCHAR(255) NOT NULL,
+        proficiency INTEGER      NOT NULL CHECK (proficiency BETWEEN 1 AND 5),
+        created_at  TIMESTAMP    NOT NULL DEFAULT now(),
+        updated_at  TIMESTAMP    NOT NULL DEFAULT now()
     );
 ---
 apiVersion: apps/v1
